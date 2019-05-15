@@ -39,7 +39,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               type=int,
               help='Maximum number of clusters to iterate over when determining best')
 
-def image_cluster(input_dir, output_dir, labeled, max_clust):
+def corr_cluster(input_dir, output_dir, labeled, max_clust):
     """Example main app using this library.
 
     Parameters
@@ -49,65 +49,46 @@ def image_cluster(input_dir, output_dir, labeled, max_clust):
     sim : float (0..1)
         similarity index (see imagecluster.cluster())
     """
-    dbfn = os.path.join(output_dir, 'fingerprints.pk')
-    if not os.path.exists(dbfn):
-        os.makedirs(os.path.dirname(dbfn), exist_ok=True)
-        print("no fingerprints database {} found".format(dbfn))
 
-        # obtain files
-        files = co.get_files(input_dir)
+    ordered_imgs = co.get_files(input_dir)
 
-        # retrieve transfer learning model
-        model = ic.get_model()
-        print("running all images through NN model ...".format(dbfn))
+    # filename, file_extension = os.path.splitext
+    # example basename: B_6_0.802.jpg
+    corrs = [float(os.path.splitext(os.path.basename(x))[0].split('_')[-1]) for x in ordered_imgs]
 
-        # fps is a dictionary mapping image to model fingerprint
-        # files is a list of full paths, but the keys of fps are basenames
-        fps = ic.fingerprints(files, model, size=(224,224))
-        co.write_pk(fps, dbfn)
-    else:
-        print("loading fingerprints database {} ...".format(dbfn))
-        fps = co.read_pk(dbfn)
+    # 0 is used as a placeholder to get 2D array as input
+    X = np.transpose(np.stack((np.array(corrs), np.zeros(len(corrs)))))
 
-    print("clustering ...")
-    # perform distance calculations
-    # dfps is a condensed distance matrix
-    # Z is a linkage matrix
+    # obtain pairwise distances
+    condensed_dist = distance.pdist(X, metric='euclidean')
 
-    dfps = distance.pdist(np.array(list(fps.values())), metric='euclidean')
-    # ordered_imgs is a list of file names as strings corresponding to the distance matrix axis
-    ordered_imgs = list(fps.keys())
-    # hierarchical/agglomerative clustering (Z = linkage matrix, construct
-    # dendrogram)
-    Z = hierarchy.linkage(dfps, method='average', metric='euclidian')
+    # Calculate the distance between each sample, input must be condensed matrix
+    Z = linkage(condensed_dist, 'ward')
 
-    # take condensed distance matrix dfps and make it square e.g. noncondensed
-    noncond_dist = distance.squareform(dfps)
+    # convert from condensed to 2D for silhouette score
+    noncond_dist = distance.squareform(condensed_dist)
 
     # determine best clustering
     ss, vms, best_ss_df, best_vms_df = analysis.score_clusters(
         ordered_imgs, Z, noncond_dist, max_clust, labeled)
 
+    # output results
     print('best ss n_clust: ' + str(best_ss_df['n_clust'].values[0]) + ' with score ' +  str(best_ss_df['ss'].values[0]))
     print('best vms n_clust: ' + str(best_vms_df['n_clust'].values[0]) + ' with score ' +  str(best_vms_df['vms'].values[0]))
     best_k = best_vms_df['n_clust'].values[0] # toggle here
 
-    # use image clustering
-    # clustered_imgs is a list of the nested list of images in clusters corresponding to the cut made
-    clustered_imgs = ic.cluster(ordered_imgs, Z, best_k)
-
     # create dendrograms
     fig, ax = plt.subplots()
     plt.figure(figsize=(20,10))
-    plt.title('Hierarchical Clustering Dendrogram (imageclust)')
+    plt.title('Hierarchical Clustering Dendrogram (corr clust)')
     plt.xlabel('plot name')
-    plt.ylabel('distance (imageclust)')
+    plt.ylabel('distance (corr clust)')
     R = dendrogram(Z, labels = ordered_imgs, leaf_rotation = 90)
-    plt.savefig(os.path.join(output_dir, 'iclust.png'))
+    plt.savefig(os.path.join(output_dir, 'corrclust.png'))
     plt.close()
 
-    analysis.print_avg_order(ordered_imgs, Z, best_k, input_dir, output_dir, 'iclust order', R)
+    analysis.print_avg_order(ordered_imgs, Z, best_k, input_dir, output_dir, 'corrclust order', R)
 
 if __name__ == "__main__":
-    image_cluster()
+    corr_cluster()
 
