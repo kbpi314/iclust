@@ -23,6 +23,9 @@ from PIL import Image
 
 # functions for image processing and output
 def avg_image(output_dir, imlist, string):
+    '''
+    Construct an image average from a given set of images
+    '''
     w,h=Image.open(imlist[0]).size
     N=len(imlist)
 
@@ -42,12 +45,11 @@ def avg_image(output_dir, imlist, string):
     out.save(os.path.join(output_dir, string) + '.jpg')
 
 def corr_order(input_dir, output_dir, R, string):
-    #try:
+    '''
+    Prints out the images concatenated in the order they appear in the
+    dendrogram (from left to right)
+    '''
     image_list = [os.path.join(input_dir, x) for x in R['ivl']]
-    #except:
-    #   new_R = [str(x[0]) for x in R['ivl']]
-    #   image_list = [path + 'plots/' + x for x in new_R]
-
     images = list(map(Image.open, image_list))
     widths, heights = zip(*(i.size for i in images))
 
@@ -64,9 +66,10 @@ def corr_order(input_dir, output_dir, R, string):
     new_im.save(os.path.join(output_dir, string) + '.jpg')
 
 def score_clusters(ordered_imgs, Z, noncond_dist, max_clust, labeled):
-    # groups is the truth, labels is the predicted
-    # Z is linkage matrix
-    # ids is the names of the files corresponding to the order in which Z was created
+    '''
+    Iterates over cluster numbers and computes v_measure_score and
+    silhouette_score to ultimately identify best clusterings.
+    '''
     ss = []
     vms = []
     n_clust = []
@@ -84,30 +87,34 @@ def score_clusters(ordered_imgs, Z, noncond_dist, max_clust, labeled):
         flat_list = [item for sublist in clustered_imgs for item in sublist]
         assigned_labels = [img_to_cluster[x] for x in flat_list]
 
-        # get assigned labels
-        # example 'path/A_3_0.691.jpg'
-        # A is the label, 3 is the replicate, 0.691 is the empirical corr
-        true_labels = [x.split('_')[0] for x in flat_list]
+        if len(np.unique(assigned_labels)) > 1:
+            ss.append(silhouette_score(noncond_dist, assigned_labels, metric='euclidean'))
+        else:
+            # handles case where only one cluster is produced, which happens
+            # in corr_clust if all correlations are the same
+            ss.append(-1)
 
-        # if len(np.unique(assigned_labels)) > 1:
-        ss.append(silhouette_score(noncond_dist, assigned_labels, metric='euclidean'))
         if labeled:
+            # get true labels
+            # example 'path/A_3_0.691.jpg'
+            # A is the label, 3 is the replicate, 0.691 is the empirical corr
+            true_labels = [x.split('_')[0] for x in flat_list]
             vms.append(v_measure_score(true_labels, assigned_labels))
         else:
             vms.append(-1)
 
         n_clust.append(len(clustered_imgs))
-        #else:
-        #    ss.append(-1)
-        #    vms.append(-1)
-        #    n_clust.append(1)
 
     corr_score_df = pd.DataFrame({'ss': ss, 'vms': vms, 'n_clust': n_clust})
     best_ss_df = corr_score_df.loc[corr_score_df['ss'] == max(corr_score_df['ss'])]
     best_vms_df = corr_score_df.loc[corr_score_df['vms'] == max(corr_score_df['vms'])]
-    return ss, vms, best_ss_df, best_vms_df
+    return best_ss_df, best_vms_df
 
 def print_avg_order(ordered_imgs, Z, k, input_dir, output_dir, string, R):
+    '''
+    Prints the image average for each cluster as well as the correlations in the
+    order they appear from left to right in the dendrogram
+    '''
     cut = hierarchy.fcluster(Z, k, criterion='maxclust')
     cluster_to_img = defaultdict(list)
     img_to_cluster = {}

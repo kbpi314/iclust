@@ -1,26 +1,22 @@
-import os, re
+import os
 import numpy as np
-import pandas as pd
 import click
-import scipy.stats
-import matplotlib
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set_style("white")
 from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('svg')
-from collections import defaultdict
-import glob
+import random
 
 from scipy.spatial import distance
 from scipy.cluster import hierarchy
-from scipy.cluster.hierarchy import dendrogram, set_link_color_palette, linkage
-from matplotlib.colors import rgb2hex, colorConverter
-from sklearn.metrics import v_measure_score, silhouette_score
-from PIL import Image
+from scipy.cluster.hierarchy import linkage
 from iclust import imagecluster as ic
 from iclust import common as co
+from iclust import output
 from iclust import analysis
+
+sns.set_style("white")
+set_matplotlib_formats('svg')
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -38,76 +34,107 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('-m', '--max_clust', required=True,
               type=int,
               help='Maximum number of clusters to iterate over when determining best')
+@click.option('--imageclustering/--nonimageclustering', required=True, default=False,
+              help='Boolean for whether data should be image or corr clustered')
 
-def image_cluster(input_dir, output_dir, labeled, max_clust):
-    """Example main app using this library.
-
+def image_cluster(input_dir, output_dir, labeled, max_clust, imageclustering):
+    """
     Parameters
     ----------
     input_dir : str
         path to directory with images
-    sim : float (0..1)
-        similarity index (see imagecluster.cluster())
+    output_dir : str
+        path to directory for output files
+    labeled : boolean
+        TRUE if data have true known labels, false otherwise
+    max_clust : int
+        Maximum number of cluster numbers to iterate over
+        e.g. range(2. max_clust+1)
     """
-    dbfn = os.path.join(output_dir, 'fingerprints.pk')
-    if not os.path.exists(dbfn):
-        os.makedirs(os.path.dirname(dbfn), exist_ok=True)
-        print("no fingerprints database {} found".format(dbfn))
 
-        # obtain files
-        files = co.get_files(input_dir)
+    if imageclustering:
+        plot_label = 'iclust'
+        dbfn = os.path.join(output_dir, 'fingerprints.pk')
+        if not os.path.exists(dbfn):
+            os.makedirs(os.path.dirname(dbfn), exist_ok=True)
+            print("no fingerprints database {} found".format(dbfn))
 
-        # retrieve transfer learning model
-        model = ic.get_model()
-        print("running all images through NN model ...".format(dbfn))
+            # obtain files
+            files = co.get_files(input_dir)
 
-        # fps is a dictionary mapping image to model fingerprint
-        # files is a list of full paths, but the keys of fps are basenames
-        fps = ic.fingerprints(files, model, size=(224,224))
-        co.write_pk(fps, dbfn)
+            print("running all images through NN model ...")
+            # retrieve transfer learning model
+            # fps is a dictionary mapping image to model fingerprint
+            # files is a list of full paths, but the keys of fps are basenames
+            fps = ic.fingerprints(files, model=ic.get_model(), size=(224, 224))
+            co.write_pk(fps, dbfn)
+        else:
+            print("loading fingerprints database {} ...".format(dbfn))
+            fps = co.read_pk(dbfn)
+
+        print("clustering ...")
+        # perform distance calculations
+        # dfps is a condensed distance matrix
+        # Z is a linkage matrix
+
+        dfps = distance.pdist(np.array(list(fps.values())), metric='euclidean')
+        # ordered_imgs is a list of file basenames as strings corresponding to the
+        # distance matrix axis
+        ordered_imgs = list(fps.keys())
+        # hierarchical/agglomerative clustering (Z = linkage matrix, construct
+        # dendrogram)
+
+        linkages = hierarchy.linkage(dfps, method='average', metric='euclidian')
+
+        # take condensed distance matrix dfps and make it square e.g. noncondensed
+        noncond_dist = distance.squareform(dfps)
+
     else:
-        print("loading fingerprints database {} ...".format(dbfn))
-        fps = co.read_pk(dbfn)
+        plot_label = 'cclust'
+        ordered_imgs = co.get_files(input_dir)
 
-    print("clustering ...")
-    # perform distance calculations
-    # dfps is a condensed distance matrix
-    # Z is a linkage matrix
+        # filename, file_extension = os.path.splitext
+        # example basename: B_6_0.802.jpg
+        corrs = [float(os.path.splitext(os.path.basename(x))[0].split('_')[-1]) \
+                 for x in ordered_imgs]
 
-    dfps = distance.pdist(np.array(list(fps.values())), metric='euclidean')
-    # ordered_imgs is a list of file names as strings corresponding to the distance matrix axis
-    ordered_imgs = list(fps.keys())
-    # hierarchical/agglomerative clustering (Z = linkage matrix, construct
-    # dendrogram)
-    Z = hierarchy.linkage(dfps, method='average', metric='euclidian')
+        # 0 is used as a placeholder to get 2D array as input
+        data = np.transpose(np.stack((np.array(corrs), np.zeros(len(corrs)))))
 
-    # take condensed distance matrix dfps and make it square e.g. noncondensed
-    noncond_dist = distance.squareform(dfps)
+        # obtain pairwise distances
+        condensed_dist = distance.pdist(data, metric='euclidean')
+
+        # Calculate the distance between each sample, input must be condensed matrix
+        linkages = linkage(condensed_dist, 'ward')
+
+        # convert from condensed to 2D for silhouette score
+        noncond_dist = distance.squareform(condensed_dist)
 
     # determine best clustering
-    ss, vms, best_ss_df, best_vms_df = analysis.score_clusters(
-        ordered_imgs, Z, noncond_dist, max_clust, labeled)
+    best_ss_df, best_vms_df = analysis.score_clusters(
+        ordered_imgs, linkages, noncond_dist, max_clust, labeled)
 
-    print('best ss n_clust: ' + str(best_ss_df['n_clust'].values[0]) + ' with score ' +  str(best_ss_df['ss'].values[0]))
-    print('best vms n_clust: ' + str(best_vms_df['n_clust'].values[0]) + ' with score ' +  str(best_vms_df['vms'].values[0]))
-    best_k = best_vms_df['n_clust'].values[0] # toggle here
-
-    # use image clustering
-    # clustered_imgs is a list of the nested list of images in clusters corresponding to the cut made
-    clustered_imgs = ic.cluster(ordered_imgs, Z, best_k)
+    best_k = output.print_results(best_ss_df, best_vms_df, output_dir)
 
     # create dendrograms
-    fig, ax = plt.subplots()
-    plt.figure(figsize=(20,10))
-    plt.title('Hierarchical Clustering Dendrogram (imageclust)')
-    plt.xlabel('plot name')
-    plt.ylabel('distance (imageclust)')
-    R = dendrogram(Z, labels = ordered_imgs, leaf_rotation = 90)
-    plt.savefig(os.path.join(output_dir, 'iclust.png'))
-    plt.close()
+    dend_results = output.plot_dend(plot_label, linkages, ordered_imgs, output_dir)
 
-    analysis.print_avg_order(ordered_imgs, Z, best_k, input_dir, output_dir, 'iclust order', R)
+    if imageclustering:
+        # create pca
+        # construct a df from the fingerprints and have a group label corresponding to original class
+        indices = []
+        values = []
+        for img, fp in fps.items():
+            indices.append(img)
+            values.append(fp)
+
+        df = pd.DataFrame(data=np.stack(values, axis=0), index=indices)
+        df['group'] = [str(x).split('_')[0] for x in df.index.values]
+
+        output.plot_pca(df, output_dir)
+
+        analysis.print_avg_order(ordered_imgs, linkages, best_k, input_dir,
+                                 output_dir, 'iclust order', dend_results)
 
 if __name__ == "__main__":
     image_cluster()
-
