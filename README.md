@@ -12,82 +12,10 @@ learning using a pre-trained keras NN model.
 # check that $PYTHONPATH=/Users/KevinBu/tools/sandbox/lib/python3.7/site-packages/
 python3 setup.py install
 
+# or on hpc
+module load python/3.7.3 && export PYTHONPATH=$PYTHONPATH:/hpc/users/buk02/tools/sandbox/lib/python3.7/site-packages/
+python setup.py install --prefix=/hpc/users/buk02/tools/sandbox
 
-###
-# Anscombe's Quartet
-###
-
-
-# quick test at sigma = 0.1
-rm -rf /Users/KevinBu/Desktop/clemente_lab/iclust/data/aq_0_10x_0.1
-python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/plot_correlations.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/anscombes.txt -o /Users/KevinBu/Desktop/clemente_lab/iclust/data/ --labeled -l group -s 0 -n 10 -sv 0.1 -dl aq
-
-
-rm -rf /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/aq_0_10x_0.1_iclust
-mkdir /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/aq_0_10x_0.1_iclust
-python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/image_cluster.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/aq_0_10x_0.1/ -o /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/aq_0_10x_0.1_iclust/ -l True -m 20 --imageclustering
-
-
-
-# generate data
-python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/plot_correlations.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/anscombes.txt -o /Users/KevinBu/Desktop/clemente_lab/iclust/data/ --labeled -l group -s 0 -n 10 -sv 0,0.1,0.25,0.5,0.75,1 -dl aq
-
-# analyze data with cclust and iclust
-for i in 0.1 0.25 0.5 0.75 1.0
-do
-    mkdir /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/aq_0_10x_${i}_cclust
-    python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/image_cluster.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/aq_0_10x_${i}/ -o /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/aq_0_10x_${i}_cclust/ -l True -m 20 --nonimageclustering
-
-    mkdir /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/aq_0_10x_${i}_iclust
-    python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/image_cluster.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/aq_0_10x_${i}/ -o /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/aq_0_10x_${i}_iclust/ -l True -m 20 --imageclustering
-done
-
-###
-# Datasaurus Dozen
-###
-
-# generate data
-python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/plot_correlations.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/DatasaurusDozen.tsv -o /Users/KevinBu/Desktop/clemente_lab/iclust/data/ --labeled -l dataset -s 0 -n 5 -sv 0,0.1,0.5,1,2,3 -dl dd
-
-# analyze data with cclust and iclust
-for i in 0.1 0.5 1.0 2.0 3.0
-do
-    mkdir /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/dd_0_5x_${i}_cclust
-    python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/image_cluster.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/dd_0_5x_${i}/ -o /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/dd_0_5x_${i}_cclust/ -l True -m 20 --nonimageclustering
-
-    mkdir /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/dd_0_5x_${i}_iclust
-    python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/image_cluster.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/dd_0_5x_${i}/ -o /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/dd_0_5x_${i}_iclust/ -l True -m 20 --imageclustering
-done
-
-###
-# WHO
-###
-
-# generate data
-mkdir /Users/KevinBu/Desktop/clemente_lab/iclust/data/WHO/
-python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/plot_correlations.py -i /Users/KevinBu/Desktop/clemente_lab/CUtIe/data/MINE/WHOfinal.txt -o /Users/KevinBu/Desktop/clemente_lab/iclust/data/WHO/large_corr/ --unlabeled -s 0 -lb 0.8975 -ub 0.9025 -dl WHO
-
-
-# analyze with cclust and iclust
-for val in 'large_corr'
-do
-    mkdir /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/WHO_${val}_cclust
-    python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/image_cluster.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/WHO/${val}/ -o /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/WHO_${val}_cclust/ -l False -m 20 --nonimageclustering
-    mkdir /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/WHO_${val}_iclust
-    python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/image_cluster.py -i /Users/KevinBu/Desktop/clemente_lab/iclust/data/WHO/${val}/ -o /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/WHO_${val}_iclust/ -l False -m 20 --imageclustering
-
-done
-
-
-
-###
-# CUTIE LUNG PT
-###
-
-
-python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/image_cluster.py -i /Users/KevinBu/Desktop/clemente_lab/Submissions/CUTIE/final_data_fixed/cutie_lungpt_rsc1fdr0.05/graphs/true_corr_FN_1_3353/ -o /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/lungpt_rsc/ -l False -m 20
-
-python3 /Users/KevinBu/Desktop/clemente_lab/iclust/scripts/image_cluster.py -i /Users/KevinBu/Desktop/clemente_lab/Submissions/CUTIE/final_data_fixed/cutie_lungpt_rkc1fdr0.05/graphs/true_corr_FN_1_3376/ -o /Users/KevinBu/Desktop/clemente_lab/iclust/data_analysis/lungpt_rkc/ -l False -m 20
 
 
 ###
