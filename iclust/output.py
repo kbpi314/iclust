@@ -10,20 +10,29 @@ from IPython.display import set_matplotlib_formats
 sns.set_style("white")
 set_matplotlib_formats('svg')
 
-def plot_corr(var1, var2, data, fp):
+def plot_corr(var1, var2, data, fp, points, axis_on, fixaxis, axis_bounds=[]):
     '''
     Generates pairwise correlation plot
     '''
     fig = plt.figure()
     axes = plt.gca()
-    sns.lmplot(var1, var2, data=data, fit_reg=False, palette="Set1")
+    if points:
+        g = sns.lmplot(var1, var2, data=data, fit_reg=False, palette="Set1")
+    else:
+        g = sns.lineplot(var1, var2, data=data, palette="Set1")
     axes.set_position(np.array([.1, .1, .8, .8]))
+    if fixaxis:
+        g.set(xlim=(axis_bounds[0],axis_bounds[1]),
+              ylim=(axis_bounds[2], axis_bounds[3]))
     plt.tick_params(axis='both', which='both', bottom=False,
                     top=False, left=False, right=False,
-                    labelbottom=False, labelleft=False)
+                    labelbottom=False, labelleft=False,
+                    labelright=False, labeltop=False)
     plt.ticklabel_format(useOffset=False, style='plain', axis='both')
     axes.set_ylabel('')
     axes.set_xlabel('')
+    if not axis_on:
+        plt.axis('off')
     fig.patch.set_visible(False)
     axes.patch.set_visible(False)
     plt.savefig(fp)

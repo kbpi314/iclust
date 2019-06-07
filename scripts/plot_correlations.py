@@ -21,6 +21,10 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               type=str, help='Output directory to store plots')
 @click.option('--labeled/--unlabeled', required=True, default=False,
               help='Boolean for whether data is labeled or unlabeled')
+@click.option('--points/--lines', required=False, default=True,
+              help='Boolean for whether data is points or lines')
+@click.option('--fixaxis/--no_fixaxis', required=False, default=False,
+              help='Boolean for whether axes are fixed scale-wise')
 @click.option('-l', '--true_label', required=True, default='group',
               type=str, help='String denoting true class')
 @click.option('-lb', '--lower_bound', required=False, default=-1, type=float,
@@ -38,9 +42,12 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               help='CSV string with values for noise')
 @click.option('-dl', '--data_label', required=False,
               type=str, help='String value for label of dataset')
+@click.option('--axis_on/--axis_off', required=False, default=True,
+              help='Boolean for whether axes are on or off')
 
-def plot_correlations(input_df, output_dir, labeled, true_label, lower_bound,
-                      upper_bound, n_seed, n_sim, sigma_vector, data_label):
+def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
+                      true_label, lower_bound, upper_bound, n_seed, n_sim,
+                      sigma_vector, data_label, axis_on):
     '''
     '''
     if not os.path.exists(output_dir):
@@ -57,6 +64,11 @@ def plot_correlations(input_df, output_dir, labeled, true_label, lower_bound,
 
         # read in data
         simulated_df = pd.read_csv(input_df, sep='\t')
+
+        # determine bounds
+        min_x, min_y = np.nanmin(simulated_df['x']), np.nanmin(simulated_df['y'])
+        max_x, max_y = np.nanmax(simulated_df['x']), np.nanmax(simulated_df['y'])
+        axis_bounds = (min_x, max_x, min_y, max_y)
 
         # can't have underscores
         simulated_df[true_label] = simulated_df[true_label].str.replace('_', "-")
@@ -90,7 +102,8 @@ def plot_correlations(input_df, output_dir, labeled, true_label, lower_bound,
                     # create figure
                     fp = os.path.join(path, class_name + '_' + str(plot) + \
                                       '_' + str(round(corr, 3)) + '.jpg')
-                    output.plot_corr('x', 'y', current_df, fp)
+                    output.plot_corr('x', 'y', current_df, fp, points, axis_on,
+                                     fixaxis, axis_bounds)
 
 
     else:
@@ -120,6 +133,10 @@ def plot_correlations(input_df, output_dir, labeled, true_label, lower_bound,
         print(str(len(pairs)) + ' plots were plotted')
         # font = {'size'   : 2}
         # matplotlib.rc('font', **font)
+        if fixaxis:
+            axis_bounds = analysis.get_extremum(df, var_names, pairs)
+        else:
+            axis_bounds = []
 
         # for each type in 'dataset' plot them
         for pair in pairs:
@@ -128,7 +145,8 @@ def plot_correlations(input_df, output_dir, labeled, true_label, lower_bound,
             fp = output_dir + data_label + '_' + str(var1) + '_' + str(var2) + \
                 '_' + str(round(float(corrs[var1][var2]), 2)) + '.jpg'
 
-            output.plot_corr(var_names[var1], var_names[var2], current_data, fp)
+            output.plot_corr(var_names[var1], var_names[var2], current_data, fp,
+                             points, axis_on, fixaxis, axis_bounds)
 
 
 if __name__ == "__main__":
