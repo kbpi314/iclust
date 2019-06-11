@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 from scipy.spatial import distance
 from scipy.cluster import hierarchy
 import numpy as np

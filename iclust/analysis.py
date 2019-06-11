@@ -1,9 +1,10 @@
+import matplotlib
+matplotlib.use('Agg')
 import pandas as pd
 import numpy as np
 import os
 import scipy.stats
 
-import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style("white")
@@ -132,3 +133,30 @@ def print_avg_order(ordered_imgs, Z, k, input_dir, output_dir, string, R):
 
     corr_order(input_dir, output_dir, R, string)
 
+def get_extremum(df, var_names, pairs):
+    '''
+    Determine max and min ranges for fixed axis plotting
+    '''
+    min_x, min_y = np.Inf, np.Inf
+    max_x, max_y = -np.Inf, -np.Inf
+    for pair in pairs:
+        var1, var2 = pair
+        localmin_x, local_miny = np.nanmin(df[var_names[var1]]), np.nanmin(df[var_names[var2]])
+        localmax_x, local_maxy = np.nanmax(df[var_names[var1]]), np.nanmax(df[var_names[var2]])
+        if localmin_x < min_x:
+            min_x = localmin_x
+        if localmin_y < min_y:
+            min_y = localmin_y
+        if localmax_x > max_x:
+            max_x = localmax_x
+        if localmax_y > max_y:
+            max_y = localmax_y
+
+    x_range = max_x - min_x
+    y_range = max_y - min_y
+    max_x = max_x + 0.1 * x_range
+    max_y = max_y + 0.1 * y_range
+    min_x = min_x - 0.1 * x_range
+    min_y = min_y - 0.1 * y_range
+
+    return min_x, max_x, min_y, max_y
