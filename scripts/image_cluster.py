@@ -80,6 +80,7 @@ def image_cluster(input_dir, output_dir, labeled, max_clust, imageclustering):
         # Z is a linkage matrix
 
         dfps = distance.pdist(np.array(list(fps.values())), metric='euclidean')
+
         # ordered_imgs is a list of file basenames as strings corresponding to the
         # distance matrix axis
         ordered_imgs = list(fps.keys())

@@ -133,16 +133,18 @@ def print_avg_order(ordered_imgs, Z, k, input_dir, output_dir, string, R):
 
     corr_order(input_dir, output_dir, R, string)
 
-def get_extremum(df, var_names, pairs):
+def get_extremum(df, pairs):
     '''
     Determine max and min ranges for fixed axis plotting
     '''
+    var_names = df.columns.values
+
     min_x, min_y = np.Inf, np.Inf
     max_x, max_y = -np.Inf, -np.Inf
     for pair in pairs:
         var1, var2 = pair
-        localmin_x, local_miny = np.nanmin(df[var_names[var1]]), np.nanmin(df[var_names[var2]])
-        localmax_x, local_maxy = np.nanmax(df[var_names[var1]]), np.nanmax(df[var_names[var2]])
+        localmin_x, localmin_y = np.nanmin(df[var_names[var1]]), np.nanmin(df[var_names[var2]])
+        localmax_x, localmax_y = np.nanmax(df[var_names[var1]]), np.nanmax(df[var_names[var2]])
         if localmin_x < min_x:
             min_x = localmin_x
         if localmin_y < min_y:

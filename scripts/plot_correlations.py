@@ -9,6 +9,7 @@ import seaborn as sns
 import scipy.stats
 from IPython.display import set_matplotlib_formats
 from iclust import output
+from iclust import analysis
 sns.set_style("white")
 set_matplotlib_formats('svg')
 
@@ -91,6 +92,22 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
                     sim_plots[i][j] = rel_df + np.random.normal(mean, sigma,
                                                                 [len(rel_df),
                                                                  len(rel_df.columns)])
+
+            bounds_df = pd.DataFrame()
+            x_values = []
+            y_values = []
+            for i in simulated_df[true_label]:
+                for j in range(n_sim):
+                    x_values.extend(sim_plots[i][j]['x'])
+                    y_values.extend(sim_plots[i][j]['y'])
+            bounds_df['x'] = x_values
+            bounds_df['y'] = y_values
+
+            if fixaxis:
+                axis_bounds = analysis.get_extremum(bounds_df, pairs=[(0,1)])
+            else:
+                axis_bounds = []
+
             # generate plots
             # for each type of plot in 'dataset'
             for class_name in simulated_df[true_label].unique():
@@ -136,7 +153,7 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
         # font = {'size'   : 2}
         # matplotlib.rc('font', **font)
         if fixaxis:
-            axis_bounds = analysis.get_extremum(df, var_names, pairs)
+            axis_bounds = analysis.get_extremum(df, pairs)
         else:
             axis_bounds = []
 
