@@ -43,7 +43,7 @@ def avg_image(output_dir, imlist, string):
 
     # Generate, save and preview final image
     out=Image.fromarray(arr,mode="RGB")
-    out.save(os.path.join(output_dir, string) + '.jpg')
+    out.save(os.path.join(output_dir, string) + '.pdf')
 
 def corr_order(input_dir, output_dir, R, string):
     '''
@@ -64,7 +64,7 @@ def corr_order(input_dir, output_dir, R, string):
         new_im.paste(im, (x_offset,0))
         x_offset += im.size[0]
 
-    new_im.save(os.path.join(output_dir, string) + '.jpg')
+    new_im.save(os.path.join(output_dir, string) + '.png')
 
 def score_clusters(ordered_imgs, Z, noncond_dist, max_clust, labeled):
     '''
