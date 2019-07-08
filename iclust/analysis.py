@@ -132,6 +132,7 @@ def print_avg_order(ordered_imgs, Z, k, input_dir, output_dir, string, R):
         avg_image(output_dir, image_list, 'avg_img_' + str(k) + '_' + str(i))
 
     corr_order(input_dir, output_dir, R, string)
+    return cluster_to_img
 
 def get_extremum(df, pairs):
     '''

@@ -136,8 +136,8 @@ def image_cluster(input_dir, output_dir, labeled, max_clust, imageclustering):
 
         output.plot_pca(df, output_dir)
 
-        analysis.print_avg_order(ordered_imgs, linkages, best_k, input_dir,
-                                 output_dir, 'iclust order', dend_results)
+        cluster_to_img = analysis.print_avg_order(ordered_imgs, linkages,
+            best_k, input_dir, output_dir, 'iclust order', dend_results)
 
 if __name__ == "__main__":
     image_cluster()
