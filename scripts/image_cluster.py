@@ -131,13 +131,16 @@ def image_cluster(input_dir, output_dir, labeled, max_clust, imageclustering):
             indices.append(img)
             values.append(fp)
 
+        img_to_cluster = analysis.print_avg_order(ordered_imgs, linkages,
+            best_k, input_dir, output_dir, 'iclust order', dend_results)
+
         df = pd.DataFrame(data=np.stack(values, axis=0), index=indices)
-        df['group'] = [str(x).split('_')[0] for x in df.index.values]
+        if labeled:
+            df['group'] = [str(x).split('_')[0] for x in df.index.values]
+        else:
+            df['group'] =['cluster ' + str(img_to_cluster[str(x)]) for x in df.index.values]
 
         output.plot_pca(df, output_dir)
-
-        cluster_to_img = analysis.print_avg_order(ordered_imgs, linkages,
-            best_k, input_dir, output_dir, 'iclust order', dend_results)
 
 if __name__ == "__main__":
     image_cluster()

@@ -49,6 +49,7 @@ def plot_dend(plot_label, linkages, ordered_imgs, output_dir):
     plt.title('Hierarchical Clustering Dendrogram (' + plot_label + ')')
     plt.xlabel('plot name')
     plt.ylabel('distance (' + plot_label + ')')
+    #dend_results = dendrogram(linkages, color_threshold=27, labels=ordered_imgs, leaf_rotation=90)
     dend_results = dendrogram(linkages, labels=ordered_imgs, leaf_rotation=90)
     plt.savefig(os.path.join(output_dir, plot_label + '.pdf'))
     plt.close()
@@ -70,7 +71,7 @@ def plot_pca(df, output_dir):
     random.seed(a=0)
     for i in range(len(unique_vals)):
         colors.append('#%06X' % random.randint(0, 0xFFFFFF))
-
+    # colors = ['r', 'g']
     points = {}
     for v in range(len(unique_vals)):
         points[v] = plt.scatter(projected[:, 0][df['group'] == unique_vals[v]],
