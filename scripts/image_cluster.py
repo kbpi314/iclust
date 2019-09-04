@@ -33,13 +33,16 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('-l', '--labeled', required=True,
               type=bool,
               help='True if input images have true labels (format: <label>_blah.jpg)')
-@click.option('-m', '--max_clust', required=True,
+@click.option('-min', '--min_clust', required=True,
+              type=int,
+              help='Minimum number of clusters to iterate over when determining best')
+@click.option('-max', '--max_clust', required=True,
               type=int,
               help='Maximum number of clusters to iterate over when determining best')
 @click.option('--imageclustering/--nonimageclustering', required=True, default=False,
               help='Boolean for whether data should be image or corr clustered')
 
-def image_cluster(input_dir, output_dir, labeled, max_clust, imageclustering):
+def image_cluster(input_dir, output_dir, labeled, min_clust, max_clust, imageclustering):
     """
     Parameters
     ----------
@@ -49,9 +52,11 @@ def image_cluster(input_dir, output_dir, labeled, max_clust, imageclustering):
         path to directory for output files
     labeled : boolean
         TRUE if data have true known labels, false otherwise
+    min_clust : int
+        Minimum number of cluster numbers to iterate over
+        e.g. range(min_clust. max_clust+1)
     max_clust : int
         Maximum number of cluster numbers to iterate over
-        e.g. range(2. max_clust+1)
     """
 
     if imageclustering:
@@ -115,7 +120,7 @@ def image_cluster(input_dir, output_dir, labeled, max_clust, imageclustering):
 
     # determine best clustering
     best_ss_df, best_vms_df = analysis.score_clusters(
-        ordered_imgs, linkages, noncond_dist, max_clust, labeled)
+        ordered_imgs, linkages, noncond_dist, min_clust, max_clust, labeled)
 
     best_k = output.print_results(best_ss_df, best_vms_df, output_dir)
 

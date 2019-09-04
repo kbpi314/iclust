@@ -66,7 +66,7 @@ def corr_order(input_dir, output_dir, R, string):
 
     new_im.save(os.path.join(output_dir, string) + '.png')
 
-def score_clusters(ordered_imgs, Z, noncond_dist, max_clust, labeled):
+def score_clusters(ordered_imgs, Z, noncond_dist, min_clust, max_clust, labeled):
     '''
     Iterates over cluster numbers and computes v_measure_score and
     silhouette_score to ultimately identify best clusterings.
@@ -75,7 +75,7 @@ def score_clusters(ordered_imgs, Z, noncond_dist, max_clust, labeled):
     vms = []
     n_clust = []
 
-    for k in range(2, max_clust+1):
+    for k in range(min_clust, max_clust+1):
         cut = hierarchy.fcluster(Z, k, criterion='maxclust')
         cluster_to_img = defaultdict(list)
         img_to_cluster = {}
