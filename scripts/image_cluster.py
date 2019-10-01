@@ -126,6 +126,7 @@ def image_cluster(input_dir, output_dir, labeled, min_clust, max_clust, imageclu
 
     # create dendrograms
     dend_results = output.plot_dend(plot_label, linkages, ordered_imgs, output_dir)
+    # print(dend_results['ivl'])
 
     if imageclustering:
         # create pca
@@ -138,6 +139,7 @@ def image_cluster(input_dir, output_dir, labeled, min_clust, max_clust, imageclu
 
         img_to_cluster = analysis.print_avg_order(ordered_imgs, linkages,
             best_k, input_dir, output_dir, 'iclust order', dend_results)
+        # print(img_to_cluster)
 
         df = pd.DataFrame(data=np.stack(values, axis=0), index=indices)
         if labeled:

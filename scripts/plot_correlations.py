@@ -66,7 +66,7 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
         sigmas = [float(x) for x in sigma_vector.split(',')]
 
         # read in data
-        simulated_df = pd.read_csv(input_df, sep='\t')
+        simulated_df = pd.read_csv(input_df, sep='\t', engine='python')
 
         # determine bounds
         min_x, min_y = np.nanmin(simulated_df['x']), np.nanmin(simulated_df['y'])
@@ -118,6 +118,10 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
                     current_df = current_set[plot]
                     corr = scipy.stats.pearsonr(current_df['x'], current_df['y'])[0]
 
+                    min_x, max_x, min_y, max_y = analysis.get_extremum(current_df, [(0,1)])
+                    x_lim = np.max((np.abs(min_x), np.abs(max_x)))
+                    y_lim = np.max((np.abs(min_y), np.abs(max_y)))
+                    axis_bounds = [-x_lim, x_lim, -y_lim, y_lim]
                     # create figure
                     fp = os.path.join(path, class_name + '_' + str(plot) + \
                                       '_' + str(round(corr, 3)) + '.jpg')
@@ -149,7 +153,6 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
                 if corrs[i][j] >= lower_bound and corrs[i][j] <= upper_bound:
                     pairs.append((i,j))
 
-        print(str(len(pairs)) + ' plots were plotted')
         # font = {'size'   : 2}
         # matplotlib.rc('font', **font)
         if fixaxis:
@@ -164,8 +167,15 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
             fp = output_dir + data_label + '_' + str(var1) + '_' + str(var2) + \
                 '_' + str(round(float(corrs[var1][var2]), 2)) + '.jpg'
 
+            if not fixaxis:
+                min_x, max_x, min_y, max_y = analysis.get_extremum(current_data, [(0,1)])
+                x_lim = np.max((np.abs(min_x), np.abs(max_x)))
+                y_lim = np.max((np.abs(min_y), np.abs(max_y)))
+                axis_bounds = [-x_lim, x_lim, -y_lim, y_lim]
+
             output.plot_corr(var_names[var1], var_names[var2], current_data, fp,
                              points, axis_on, fixaxis, axis_bounds)
+        print(str(len(pairs)) + ' plots were plotted')
 
 
 if __name__ == "__main__":
