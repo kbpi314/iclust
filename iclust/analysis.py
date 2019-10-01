@@ -64,7 +64,7 @@ def corr_order(input_dir, output_dir, R, string):
         new_im.paste(im, (x_offset,0))
         x_offset += im.size[0]
 
-    new_im.save(os.path.join(output_dir, string) + '.png')
+    new_im.save(os.path.join(output_dir, string) + '.pdf')
 
 def score_clusters(ordered_imgs, Z, noncond_dist, min_clust, max_clust, labeled):
     '''
