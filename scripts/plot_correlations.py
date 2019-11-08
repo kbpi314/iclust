@@ -116,7 +116,30 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
                 for plot in current_set:
                     # obtain relevant datas
                     current_df = current_set[plot]
-                    corr = scipy.stats.pearsonr(current_df['x'], current_df['y'])[0]
+
+                    if method == 'cc':
+                        try:
+                            sum_stat = scipy.stats.pearsonr(current_df['x'], current_df['y'])[0]
+                        except ValueError:
+                            sum_stat = 0
+                    elif method == 'rmse':
+                        from sklearn.model_selection import cross_val_score, train_test_split
+                        def calculate_cv_rmse(x, y):
+                            x = x.reshape(-1, 1)
+                            y = y.reshape(-1, 1)
+
+                            rmse = np.sqrt(np.mean(-1 * cross_val_score(
+                                LinearRegression(),
+                                x,
+                                y,
+                                cv=3,
+                                scoring='neg_mean_squared_error'
+                            )))
+                            return rmse
+
+                       sum_stat = calculate_cv_rmse(x, y)
+
+
 
                     min_x, max_x, min_y, max_y = analysis.get_extremum(current_df, [(0,1)])
                     x_lim = np.max((np.abs(min_x), np.abs(max_x)))
@@ -124,7 +147,7 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
                     axis_bounds = [-x_lim, x_lim, -y_lim, y_lim]
                     # create figure
                     fp = os.path.join(path, class_name + '_' + str(plot) + \
-                                      '_' + str(round(corr, 3)) + '.jpg')
+                                      '_' + str(round(sum_stat, 3)) + '.jpg')
                     output.plot_corr('x', 'y', current_df, fp, points, axis_on,
                                      fixaxis, axis_bounds)
 
@@ -140,18 +163,46 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
 
         var_names = df.columns.values
         n_var = len(var_names)
-        corrs = np.zeros([n_var, n_var])
+        sum_stat = np.zeros([n_var, n_var])
+
         pairs = []
         for i in range(n_var):
             for j in range(i):
                 current_data = df[[var_names[i], var_names[j]]].dropna()
+                x = current_data[var_names[i]]
+                y = current_data[var_names[j]]
                 try:
-                    corrs[i][j] = scipy.stats.pearsonr(current_data[var_names[i]],
-                                                       current_data[var_names[j]])[0]
+                    corr = scipy.stats.pearsonr(x, y)[0]
                 except ValueError:
-                    corrs[i][j] = 0
-                if corrs[i][j] >= lower_bound and corrs[i][j] <= upper_bound:
+                    corr = 0
+
+                if corr >= lower_bound and corr <= upper_bound:
                     pairs.append((i,j))
+
+                    if method == 'cc':
+                        sum_stat[i][j] = corr
+
+                    elif method == 'rmse':
+                        from sklearn.model_selection import cross_val_score, train_test_split
+                        def calculate_cv_rmse(x, y):
+                            x = x.reshape(-1, 1)
+                            y = y.reshape(-1, 1)
+
+                            rmse = np.sqrt(np.mean(-1 * cross_val_score(
+                                LinearRegression(),
+                                x,
+                                y,
+                                cv=3,
+                                scoring='neg_mean_squared_error'
+                            )))
+                            return rmse
+
+                        sum_stat[i][j] = calculate_cv_rmse(x, y)
+                    elif method == '':
+
+                    elif method == '':
+
+
 
         # font = {'size'   : 2}
         # matplotlib.rc('font', **font)
@@ -165,7 +216,7 @@ def plot_correlations(input_df, output_dir, labeled, points, fixaxis,
             var1, var2 = pair
             current_data = df[[var_names[var1], var_names[var2]]].dropna()
             fp = output_dir + data_label + '_' + str(var1) + '_' + str(var2) + \
-                '_' + str(round(float(corrs[var1][var2]), 2)) + '.jpg'
+                '_' + str(round(float(sum_stat[var1][var2]), 3)) + '.jpg'
 
             if not fixaxis:
                 min_x, max_x, min_y, max_y = analysis.get_extremum(current_data, [(0,1)])

@@ -39,10 +39,11 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('-max', '--max_clust', required=True,
               type=int,
               help='Maximum number of clusters to iterate over when determining best')
-@click.option('--imageclustering/--nonimageclustering', required=True, default=False,
-              help='Boolean for whether data should be image or corr clustered')
+@click.option('-m', '--method', required=True,
+              type=str,
+              help='String specifying type of analysis, e.g. nn for neural net, cc for corr str, rmse etc')
 
-def image_cluster(input_dir, output_dir, labeled, min_clust, max_clust, imageclustering):
+def image_cluster(input_dir, output_dir, labeled, min_clust, max_clust, method):
     """
     Parameters
     ----------
@@ -57,9 +58,11 @@ def image_cluster(input_dir, output_dir, labeled, min_clust, max_clust, imageclu
         e.g. range(min_clust. max_clust+1)
     max_clust : int
         Maximum number of cluster numbers to iterate over
+    method : str
+        String describing analysis (nn, cc, rmse)
     """
 
-    if imageclustering:
+    if method == 'nn':
         plot_label = 'iclust'
         dbfn = os.path.join(output_dir, 'fingerprints.pk')
         if not os.path.exists(dbfn):
@@ -97,7 +100,7 @@ def image_cluster(input_dir, output_dir, labeled, min_clust, max_clust, imageclu
         # take condensed distance matrix dfps and make it square e.g. noncondensed
         noncond_dist = distance.squareform(dfps)
 
-    else:
+    elif method == 'cc':
         plot_label = 'cclust'
         ordered_imgs = co.get_files(input_dir)
 
@@ -118,6 +121,26 @@ def image_cluster(input_dir, output_dir, labeled, min_clust, max_clust, imageclu
         # convert from condensed to 2D for silhouette score
         noncond_dist = distance.squareform(condensed_dist)
 
+
+    elif method == 'rmse':
+        # replace plot_label with method string as is redundant
+        plot_label = 'rmse'
+        ordered_imgs = co.get_files(input_dir)
+
+        # get an array of rmse in the same order of the ordered_imgs
+
+
+
+        # subsequent 3 lines may be condensed
+        # obtain pairwise distances between RMSEs
+        condensed_dist = distance.pdist(data, metric='euclidean')
+
+        # Calculate the distance between each sample, input must be condensed matrix
+        linkages = linkage(condensed_dist, 'ward')
+
+        # convert from condensed to 2D for silhouette score
+        noncond_dist = distance.squareform(condensed_dist)
+
     # determine best clustering
     best_ss_df, best_vms_df = analysis.score_clusters(
         ordered_imgs, linkages, noncond_dist, min_clust, max_clust, labeled)
@@ -128,7 +151,7 @@ def image_cluster(input_dir, output_dir, labeled, min_clust, max_clust, imageclu
     dend_results = output.plot_dend(plot_label, linkages, ordered_imgs, output_dir)
     # print(dend_results['ivl'])
 
-    if imageclustering:
+    if method == 'nn':
         # create pca
         # construct a df from the fingerprints and have a group label corresponding to original class
         indices = []
